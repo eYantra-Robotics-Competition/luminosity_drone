@@ -1,0 +1,6 @@
+[submodule "swift_simulator"]
+	path = swift_simulator
+	url = https://github.com/erts-RnD/swift_simulator
+[submodule "whycon"]
+	path = whycon
+	url = https://github.com/erts-RnD/whycon
