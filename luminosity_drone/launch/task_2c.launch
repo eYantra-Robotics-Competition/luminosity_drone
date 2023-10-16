@@ -1,0 +1,33 @@
+<launch>
+  <include file="$(find rotors_gazebo)/launch/swift_with_swift_msg_arena.launch">
+  </include>
+  
+  <arg name="name" default="whycon"/>
+  <arg name="targets" default="1"/>
+  <!-- DO NOT CHANGE THE FOLLOWING TWO VALUES  -->
+  <arg name="outer_diameter" default=".55"/>
+  <arg name="inner_diameter" default=".20"/>
+
+
+
+  <node name="whycon" type="whycon" pkg="whycon" output="screen">
+    <param name="targets" value="$(arg targets)"/>
+    <param name="name" value="$(arg name)"/>
+    <param name="outer_diameter" value="$(arg outer_diameter)"/>
+    <param name="inner_diameter" value="$(arg inner_diameter)"/> 
+    <remap from="/camera/camera_info" to="/gazebo/overhead_cam/camera_info"/> 
+    <remap from="/camera/image_rect_color" to="/gazebo/overhead_cam/image_rect_color"/>
+  </node>
+
+
+  <node ns = "whycon_display" name="image_view" type="image_view" pkg="image_view" output="screen">
+    <remap from="image" to="/whycon/image_out"/>
+  </node>
+  <node ns = "drone_display" name="image_view" type="image_view" pkg="image_view" output="screen">
+    <remap from="image" to="/swift/camera_rgb/image_raw"/>
+  </node>
+
+  <node name="spawn_colony" type="colony" pkg="luminosity_drone"/>
+
+</launch>
+ 

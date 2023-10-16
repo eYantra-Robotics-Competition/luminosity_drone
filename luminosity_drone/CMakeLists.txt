@@ -7,7 +7,7 @@ project(luminosity_drone)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED COMPONENTS message_generation)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -48,6 +48,12 @@ find_package(catkin REQUIRED)
 #   Message1.msg
 #   Message2.msg
 # )
+# Generate messages in the 'msg' folder
+add_message_files(
+  FILES
+  Biolocation.msg
+  Info.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -68,6 +74,11 @@ find_package(catkin REQUIRED)
 #   DEPENDENCIES
 #   std_msgs  # Or other packages containing msgs
 # )
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  # std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -103,6 +114,7 @@ catkin_package(
 #  LIBRARIES luminosity_drone
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
+CATKIN_DEPENDS message_runtime
 )
 
 ###########
