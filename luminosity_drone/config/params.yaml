@@ -1,0 +1,22 @@
+/**:
+    ros__parameters:
+      video_device: "/dev/video2"
+      framerate: 30.0
+      io_method: "mmap"
+      frame_id: "camera"
+      pixel_format: "mjpeg2rgb"  # see usb_cam/supported_formats for list of supported formats
+      image_width: 1920
+      image_height: 1080
+      camera_name: "test_camera"
+      camera_info_url: "package://luminosity_drone/config/camera_info.yaml"
+      brightness: 0
+      contrast: 36
+      saturation: 60
+      sharpness: 2
+      gain: 0
+      auto_white_balance: true
+      white_balance: 4000
+      autoexposure: true
+      exposure: 100
+      autofocus: false
+      focus: -1
