@@ -1,0 +1,244 @@
+#!/usr/bin/env python3
+
+"""
+Controller for the drone
+"""
+
+
+
+# standard imports
+import copy
+import time
+
+
+# third-party imports
+import scipy.signal
+import numpy as np
+import rclpy
+from rclpy.node import Node
+from rclpy.clock import Clock
+from geometry_msgs.msg import PoseArray
+from pid_msg.msg import PidTune
+from swift_msgs.msg import PIDError, RCMessage
+from swift_msgs.srv import CommandBool
+
+MAX_SUM_ERROR = 100
+
+
+MAX_ROLL = 1600
+BASE_ROLL = 1500
+MIN_ROLL = 1450
+SUM_ERROR_ROLL_LIMIT = 3000
+
+
+# Similarly, create upper and lower limits, base value, and max sum error values for roll and pitch
+
+
+
+
+PID_OUTPUT_VALUES = [[], [], []] # This will be used to store data for filtering purpose
+
+class DroneController():
+    def __init__(self,node):
+        self.node= node
+        
+        self.rc_message = RCMessage()
+        self.drone_whycon_pose_array = PoseArray()
+        self.is_flying = False
+        self.last_whycon_pose_received_at = None
+        self.commandbool = CommandBool.Request()
+
+        self.set_points = [0, 0, 0]         # Setpoints for x, y, z respectively      
+        
+        self.error      = [0, 0, 0]         # Error for roll, pitch and throttle        # Create variables for previous error and sum_error
+        self.integral = [0.0,0.0,0.0]       # Iterm for roll pitch and throtle
+
+        # Create variables for previous error and sum_error
+
+
+
+        self.Kp = [ 0 * 0.01  ,  0 * 0.01  ,  0 * 0.01  ]
+        # Create variables for Kd and Ki similarly
+
+        # Create subscriber for WhyCon 
+        
+        self.whycon_sub = node.create_subscription(PoseArray,"/whycon/poses",self.whycon_poses_callback,1)
+        
+        # Similarly create subscribers for pid_tuning_altitude, pid_tuning_roll, pid_tuning_pitch and any other subscriber if required
+       
+        self.pid_alt = node.create_subscription(PidTune,"/pid_tuning_altitude",self.pid_tune_throttle_callback,1)
+
+        # Create publisher for sending commands to drone 
+
+        self.rc_pub = node.create_publisher(RCMessage, "/luminosity_drone/rc_command",1)
+        
+        # Create publisher for publishing errors for plotting in plotjuggler 
+        
+        self.pid_error_pub = node.create_publisher(PIDError, "/luminosity_drone/pid_error",1)
+
+    
+
+    def pid_tune_throttle_callback(self, msg):
+        self.Kp[2] = msg.Kp * 0.01
+        # Similarly add Kd and Ki for throttle 
+
+    def whycon_poses_callback(self, msg):
+        self.last_whycon_pose_received_at = self.node.get_clock().now().seconds_nanoseconds()[0]
+        self.drone_whycon_pose_array = msg
+
+    def pid(self):          # PID algorithm
+        print("In pid loop")
+        self.started_controller_at = time.time()
+
+        # 0 : calculating Error, Derivative, Integral for Roll error : x axis
+        self.error[0] = self.drone_whycon_pose_array.poses[0].position.x - self.set_points[0]
+        
+        # Similarly calculate error for y and z axes 
+
+        # Calculate derivative and intergral errors. Apply anti windup on integral error (You can use your own method for anti windup, an example is shown here)
+        
+
+        if self.integral[0] > SUM_ERROR_ROLL_LIMIT:
+            self.integral[0] = SUM_ERROR_ROLL_LIMIT
+        if self.integral[0] < -SUM_ERROR_ROLL_LIMIT:
+            self.integral[0] = -SUM_ERROR_ROLL_LIMIT
+        
+        # Write the PID equations and calculate the self.rc_message.rc_throttle, self.rc_message.rc_roll, self.rc_message.rc_pitch
+
+
+        # Send constant 1500 to rc_message.rc_yaw
+
+        self.rc_message.rc_yaw = int(1500)
+
+    #------------------------------------------------------------------------------------------------------------------------
+
+        #publishing alt error, roll error, pitch error, drone message
+
+        self.publish_data_to_rpi(self.rc_message.rc_roll, self.rc_message.rc_pitch, self.rc_message.rc_throttle)
+        
+        # Publish error messages for plotjuggler debugging 
+
+        self.pid_error_pub.publish(
+            PIDError(
+                roll_error=self.error[0],
+                zero_error=0.0,
+            )
+        )
+
+
+
+    def publish_data_to_rpi(self, roll, pitch, throttle):
+
+        self.rc_message.rc_roll = int(roll)
+        self.rc_message.rc_yaw = int(1500)
+
+        # NOTE: There is noise in the WhyCon feedback and the noise gets amplified because of derivative term, this noise is multiplied by high Kd gain values and create spikes in the output. 
+        #       Sending data with spikes to the drone makes the motors hot and drone vibrates a lot. To reduce the spikes in output, it is advised to pass the output generated from PID through a low pass filter.
+        #       An example of a butterworth low pass filter is shown here, you can implement any filter you like. Before implementing the filter, look for the noise yourself and compare the output of unfiltered data and filtered data 
+        #       Filter adds delay to the signal, so there is a tradeoff between the noise rejection and lag. More lag is not good for controller as it will react little later. 
+        #       Alternatively, you can apply filter on the source of noisy data i.e. WhyCon position feedback instead of applying filter to the output of PID 
+        #       The filter implemented here is not the best filter, tune this filter that has the best noise rejection and less delay. 
+
+
+        # BUTTERWORTH FILTER
+        # span = 15
+        # for index, val in enumerate([roll, pitch, throttle]):
+        #     DRONE_WHYCON_POSE[index].append(val)
+        #     if len(DRONE_WHYCON_POSE[index]) == span:
+        #         DRONE_WHYCON_POSE[index].pop(0)
+        #     if len(DRONE_WHYCON_POSE[index]) != span-1:
+        #         return
+        #     order = 3
+        #     fs = 60
+        #     fc = 5
+        #     nyq = 0.5 * fs
+        #     wc = fc / nyq
+        #     b, a = scipy.signal.butter(N=order, Wn=wc, btype='lowpass', analog=False, output='ba')
+        #     filtered_signal = scipy.signal.lfilter(b, a, DRONE_WHYCON_POSE[index])
+        #     if index == 0:
+        #         self.rc_message.rc_roll = np.uint16(filtered_signal[-1])
+        #     elif index == 1:
+        #         self.rc_message.rc_pitch = np.uint16(filtered_signal[-1])
+        #     elif index == 2:
+        #         self.rc_message.rc_throttle = np.uint16(filtered_signal[-1])
+
+        # Check the bounds of self.rc_message.rc_throttle, self.rc_message.rc_roll and self.rc_message.rc_pitch aftre rfiltering 
+
+        if self.rc_message.rc_roll > MAX_ROLL:
+            self.rc_message.rc_roll = MAX_ROLL
+        elif self.rc_message.rc_roll < MIN_ROLL:
+            self.rc_message.rc_roll = MIN_ROLL
+        
+        # Similarly add bounds for pitch yaw and throttle 
+
+        self.rc_pub.publish(self.rc_message)
+
+    # This function will be called as soon as this rosnode is terminated. So we disarm the drone as soon as we press CTRL + C. 
+    # If anything goes wrong with the drone, immediately press CTRL + C so that the drone disamrs and motors stop 
+
+    def shutdown_hook(self):
+        self.node.get_logger().info("Calling shutdown hook")
+        self.disarm()
+
+    # Function to arm the drone 
+
+    def arm(self):
+        self.node.get_logger().info("Calling arm service")
+        service_endpoint = "/swift/cmd/arming"
+        arming_service_client = self.node.create_client(CommandBool,service_endpoint)
+        self.commandbool.value = True
+        try:
+            resp = arming_service_client.call(self.commandbool)
+            return resp.success, resp.result
+        except Exception as err:
+            self.node.get_logger().info(err)
+
+    # Function to disarm the drone 
+
+    def disarm(self):
+        self.node.get_logger().info("Calling disarm service")
+        service_endpoint = "/swift/cmd/disarming"
+        disarming_service_client = self.node.create_client(CommandBool,service_endpoint)
+        disarming_service_client.wait_for_service(10.0)
+        self.commandbool.value = False
+        try:
+            resp = disarming_service_client.call(self.commandbool)
+            return resp.success, resp.result
+        except Exception as err:
+           self.node.get_logger().info(err)
+        self.is_flying = False
+
+
+
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    node = rclpy.create_node('controller')
+    node.get_logger().info(f"Node Started")
+    node.get_logger().info("Entering PID controller loop")
+
+    controller = DroneController(node)
+    controller.arm()
+    node.get_logger().info("Armed")
+
+    try:
+        while rclpy.ok():
+            controller.pid()
+            if node.get_clock().now().to_msg().sec - controller.last_whycon_pose_received_at > 1:
+                node.get_logger().error("Unable to detect WHYCON poses")
+            rclpy.spin_once(node) # Sleep for 1/30 secs
+        
+
+    except Exception as err:
+        print(err)
+
+    finally:
+        controller.shutdown_hook()
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+
+if __name__ == '__main__':
+    main()
