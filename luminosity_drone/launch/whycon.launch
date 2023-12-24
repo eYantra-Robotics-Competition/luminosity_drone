@@ -23,5 +23,6 @@
   </node>
 
   <node name="transformer" type="transformer" pkg="whycon" output="screen"/>
+  <rosparam file="$(find luminosity_drone)/launch/bridge.yaml" />
 </launch>
   

@@ -1,0 +1,10 @@
+topics:
+  - 
+    topic: "/whycon/poses"
+    type: "geometry_msgs/msg/PoseArray"
+  -  
+    topic: "/image_raw"
+    type: "sensor_msgs/msg/Image"
+  -
+    topic: "/camera_info"
+    type: "sensor_msgs/msg/CameraInfo"
