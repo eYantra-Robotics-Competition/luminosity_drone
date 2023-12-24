@@ -1,0 +1,11 @@
+<launch>
+
+
+  <include file="$(find luminosity_drone)/launch/whycon.launch" />
+  <include file="$(find luminosity_drone)/launch/usb_cam.launch" />
+
+  <node ns = "whycon_display" name="image_view" type="image_view" pkg="image_view" output="screen">
+    <remap from="image" to="/whycon/image_out"/>
+  </node>
+</launch>
+

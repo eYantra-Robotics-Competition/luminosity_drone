@@ -1,0 +1,27 @@
+<launch>
+  <arg name="name" default="whycon"/>
+  <arg name="targets" default="1"/>
+  <arg name="outer_diameter" default="0.55"/>
+  <arg name="inner_diameter" default="0.20"/>
+
+  <group ns="usb_cam">
+    <node pkg="image_proc" type="image_proc" name="image_proc">
+      <remap from = "image_raw"   to="/usb_cam/camera_info"/>
+      <remap from = "camera_info" to="/usb_cam/image_raw"/>   
+    </node> 
+  </group>
+
+  <node name="whycon" type="whycon" pkg="whycon" output="screen">
+    <param name="targets" value="$(arg targets)"/>
+    <param name="name" value="$(arg name)"/>
+    <param name="outer_diameter" value="$(arg outer_diameter)"/>
+    <param name="inner_diameter" value="$(arg inner_diameter)"/>
+
+    <!-- Remap the topics to the corresponding topics -->
+    <remap from="/camera/camera_info" to="/usb_cam/camera_info"/>
+    <remap from="/camera/image_rect_color" to="/usb_cam/image_raw"/>
+  </node>
+
+  <node name="transformer" type="transformer" pkg="whycon" output="screen"/>
+</launch>
+  
