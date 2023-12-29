@@ -1,6 +1,0 @@
-[submodule "swift_msgs"]
-	path = swift_msgs
-	url = https://github.com/erts-RnD/swift_msgs.git
-[submodule "pid_tune"]
-	path = pid_tune
-	url = git@github.com:erts-RnD/pid_tune.git
