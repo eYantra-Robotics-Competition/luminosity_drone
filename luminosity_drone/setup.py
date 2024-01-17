@@ -24,6 +24,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [  'controller = luminosity_drone.controller:main',
+        'waypoint_controller = luminosity_drone.waypoint_controller:main',
         ],
     },
 )
