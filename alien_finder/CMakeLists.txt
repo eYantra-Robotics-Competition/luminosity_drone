@@ -40,7 +40,10 @@ install(
 install(PROGRAMS
   src/mini_core
   src/nano_core
+  src/micro_core
+  src/big_core
   scripts/alien_finder.py
+  scripts/species_seeker.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
