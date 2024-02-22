@@ -42,8 +42,12 @@ install(PROGRAMS
   src/nano_core
   src/micro_core
   src/big_core
+  src/spawner 
+  src/spawner_bonus
   scripts/alien_finder.py
   scripts/species_seeker.py
+  scripts/Task_6_bonus.py
+  scripts/Task_6.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
